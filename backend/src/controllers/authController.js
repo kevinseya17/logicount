@@ -1,14 +1,19 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getDB } = require('../prisma/db');
+const { supabase } = require('../prisma/db');
 
-function login(req, res) {
+async function login(req, res) {
   const { username, password } = req.body;
   if (!username || !password)
     return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
 
-  const db = getDB();
-  const user = db.prepare('SELECT * FROM users WHERE username = ? AND active = 1').get(username);
+  const { data: user } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .eq('active', 1)
+    .maybeSingle();
+
   if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
 
   const valid = bcrypt.compareSync(password, user.password);

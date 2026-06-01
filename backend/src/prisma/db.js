@@ -1,15 +1,8 @@
-const Database = require('better-sqlite3');
-const { DB_PATH } = require('./init');
+const { createClient } = require('@supabase/supabase-js');
 
-let db;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-function getDB() {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
-  }
-  return db;
-}
-
-module.exports = { getDB };
+module.exports = { supabase };

@@ -1,128 +1,126 @@
-const { getDB } = require('../prisma/db');
+const { supabase } = require('../prisma/db');
 const { v4: uuidv4 } = require('uuid');
 
-// HU-02: Registro apertura de jornada
-function abrir(req, res) {
+async function abrir(req, res) {
   const { fecha, paquetes_recibidos } = req.body;
   if (!fecha || paquetes_recibidos === undefined)
     return res.status(400).json({ error: 'Fecha y paquetes recibidos son requeridos' });
 
-  const db = getDB();
-  const abierta = db.prepare("SELECT id FROM jornadas WHERE fecha = ? AND estado = 'abierta'").get(fecha);
+  const { data: abierta } = await supabase
+    .from('jornadas').select('id').eq('fecha', fecha).eq('estado', 'abierta').maybeSingle();
   if (abierta) return res.status(409).json({ error: 'Ya existe una jornada abierta para esa fecha' });
 
   const id = uuidv4();
-  db.prepare('INSERT INTO jornadas (id, fecha, paquetes_recibidos, estado, created_by) VALUES (?, ?, ?, ?, ?)').run(
-    id, fecha, paquetes_recibidos, 'abierta', req.user.id
-  );
+  const { error } = await supabase.from('jornadas').insert({
+    id, fecha, paquetes_recibidos, estado: 'abierta', created_by: req.user.id
+  });
+  if (error) return res.status(500).json({ error: error.message });
   res.status(201).json({ id, fecha, paquetes_recibidos, estado: 'abierta' });
 }
 
-// HU-03: Asignación de paquetes
-function asignar(req, res) {
+async function asignar(req, res) {
   const { jornada_id, mensajero_id, paquetes_asignados } = req.body;
   if (!jornada_id || !mensajero_id || !paquetes_asignados)
     return res.status(400).json({ error: 'Datos incompletos' });
 
-  const db = getDB();
-  const jornada = db.prepare("SELECT * FROM jornadas WHERE id = ? AND estado = 'abierta'").get(jornada_id);
+  const { data: jornada } = await supabase
+    .from('jornadas').select('*').eq('id', jornada_id).eq('estado', 'abierta').maybeSingle();
   if (!jornada) return res.status(404).json({ error: 'Jornada no encontrada o cerrada' });
 
-  // Check if already assigned
-  const existing = db.prepare('SELECT id FROM asignaciones WHERE jornada_id = ? AND mensajero_id = ?').get(jornada_id, mensajero_id);
+  const { data: existing } = await supabase
+    .from('asignaciones').select('id').eq('jornada_id', jornada_id).eq('mensajero_id', mensajero_id).maybeSingle();
+
   if (existing) {
-    db.prepare('UPDATE asignaciones SET paquetes_asignados = ? WHERE id = ?').run(paquetes_asignados, existing.id);
+    await supabase.from('asignaciones').update({ paquetes_asignados }).eq('id', existing.id);
     return res.json({ ...existing, paquetes_asignados });
   }
 
   const id = uuidv4();
-  db.prepare('INSERT INTO asignaciones (id, jornada_id, mensajero_id, paquetes_asignados) VALUES (?, ?, ?, ?)').run(
-    id, jornada_id, mensajero_id, paquetes_asignados
-  );
+  await supabase.from('asignaciones').insert({ id, jornada_id, mensajero_id, paquetes_asignados });
   res.status(201).json({ id, jornada_id, mensajero_id, paquetes_asignados });
 }
 
-// HU-04: Cierre operativo diario
-function cerrar(req, res) {
+async function cerrar(req, res) {
   const { jornada_id, resultados, observaciones } = req.body;
   if (!jornada_id || !resultados)
     return res.status(400).json({ error: 'Datos de cierre incompletos' });
 
-  const db = getDB();
-  const jornada = db.prepare("SELECT * FROM jornadas WHERE id = ? AND estado = 'abierta'").get(jornada_id);
+  const { data: jornada } = await supabase
+    .from('jornadas').select('*').eq('id', jornada_id).eq('estado', 'abierta').maybeSingle();
   if (!jornada) return res.status(404).json({ error: 'Jornada no encontrada o ya cerrada' });
 
   let totalEntregados = 0, totalDevueltos = 0, totalPendientes = 0;
 
-  const updateAsig = db.prepare(`UPDATE asignaciones SET 
-    paquetes_entregados = ?, paquetes_devueltos = ?, paquetes_pendientes = ? 
-    WHERE jornada_id = ? AND mensajero_id = ?`);
-
-  const updateMany = db.transaction(() => {
-    for (const r of resultados) {
-      updateAsig.run(r.entregados, r.devueltos, r.pendientes, jornada_id, r.mensajero_id);
-      totalEntregados += r.entregados || 0;
-      totalDevueltos += r.devueltos || 0;
-      totalPendientes += r.pendientes || 0;
-    }
-  });
-  updateMany();
+  for (const r of resultados) {
+    await supabase.from('asignaciones').update({
+      paquetes_entregados: r.entregados,
+      paquetes_devueltos: r.devueltos,
+      paquetes_pendientes: r.pendientes
+    }).eq('jornada_id', jornada_id).eq('mensajero_id', r.mensajero_id);
+    totalEntregados += r.entregados || 0;
+    totalDevueltos += r.devueltos || 0;
+    totalPendientes += r.pendientes || 0;
+  }
 
   const cierre_id = uuidv4();
-  db.prepare('INSERT INTO cierres (id, jornada_id, total_entregados, total_devueltos, total_pendientes, observaciones) VALUES (?, ?, ?, ?, ?, ?)').run(
-    cierre_id, jornada_id, totalEntregados, totalDevueltos, totalPendientes, observaciones || null
-  );
+  await supabase.from('cierres').insert({
+    id: cierre_id, jornada_id,
+    total_entregados: totalEntregados,
+    total_devueltos: totalDevueltos,
+    total_pendientes: totalPendientes,
+    observaciones: observaciones || null
+  });
 
-  db.prepare("UPDATE jornadas SET estado = 'cerrada', closed_at = datetime('now') WHERE id = ?").run(jornada_id);
+  await supabase.from('jornadas').update({
+    estado: 'cerrada', closed_at: new Date().toISOString()
+  }).eq('id', jornada_id);
 
   res.json({ cierre_id, jornada_id, totalEntregados, totalDevueltos, totalPendientes });
 }
 
-// HU-05: Historial operativo
-function historial(req, res) {
-  const db = getDB();
-  const rows = db.prepare(`
-    SELECT j.id, j.fecha, j.paquetes_recibidos, j.estado, j.created_at, j.closed_at,
-           c.total_entregados, c.total_devueltos, c.total_pendientes, c.observaciones
-    FROM jornadas j
-    LEFT JOIN cierres c ON c.jornada_id = j.id
-    ORDER BY j.fecha DESC
-  `).all();
-  res.json(rows);
+async function historial(req, res) {
+  const { data: rows } = await supabase
+    .from('jornadas')
+    .select('id, fecha, paquetes_recibidos, estado, created_at, closed_at, cierres (total_entregados, total_devueltos, total_pendientes, observaciones)')
+    .order('fecha', { ascending: false });
+
+  const result = (rows || []).map(j => ({
+    ...j, ...(j.cierres || {}), cierres: undefined
+  }));
+  res.json(result);
 }
 
-function getJornada(req, res) {
-  const db = getDB();
-  const jornada = db.prepare(`
-    SELECT j.*, c.total_entregados, c.total_devueltos, c.total_pendientes, c.observaciones
-    FROM jornadas j LEFT JOIN cierres c ON c.jornada_id = j.id
-    WHERE j.id = ?
-  `).get(req.params.id);
+async function getJornada(req, res) {
+  const { data: jornada } = await supabase
+    .from('jornadas')
+    .select('*, cierres (total_entregados, total_devueltos, total_pendientes, observaciones)')
+    .eq('id', req.params.id).maybeSingle();
   if (!jornada) return res.status(404).json({ error: 'Jornada no encontrada' });
 
-  const asignaciones = db.prepare(`
-    SELECT a.*, m.nombre as mensajero_nombre, m.cedula
-    FROM asignaciones a
-    JOIN mensajeros m ON m.id = a.mensajero_id
-    WHERE a.jornada_id = ?
-  `).all(req.params.id);
+  const { data: asignaciones } = await supabase
+    .from('asignaciones').select('*, mensajeros (nombre, cedula)').eq('jornada_id', req.params.id);
 
-  res.json({ ...jornada, asignaciones });
+  const flat = (asignaciones || []).map(a => ({
+    ...a, mensajero_nombre: a.mensajeros?.nombre, cedula: a.mensajeros?.cedula, mensajeros: undefined
+  }));
+
+  res.json({ ...jornada, ...(jornada.cierres || {}), cierres: undefined, asignaciones: flat });
 }
 
-function getActiva(req, res) {
-  const db = getDB();
-  const jornada = db.prepare("SELECT * FROM jornadas WHERE estado = 'abierta' ORDER BY created_at DESC LIMIT 1").get();
+async function getActiva(req, res) {
+  const { data: jornada } = await supabase
+    .from('jornadas').select('*').eq('estado', 'abierta')
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (!jornada) return res.json(null);
 
-  const asignaciones = db.prepare(`
-    SELECT a.*, m.nombre as mensajero_nombre
-    FROM asignaciones a
-    JOIN mensajeros m ON m.id = a.mensajero_id
-    WHERE a.jornada_id = ?
-  `).all(jornada.id);
+  const { data: asignaciones } = await supabase
+    .from('asignaciones').select('*, mensajeros (nombre)').eq('jornada_id', jornada.id);
 
-  res.json({ ...jornada, asignaciones });
+  const flat = (asignaciones || []).map(a => ({
+    ...a, mensajero_nombre: a.mensajeros?.nombre, mensajeros: undefined
+  }));
+
+  res.json({ ...jornada, asignaciones: flat });
 }
 
 module.exports = { abrir, asignar, cerrar, historial, getJornada, getActiva };

@@ -27,22 +27,24 @@ app.use('/api/dashboard', require('./routes/dashboard'));
 app.get('/api/health', (_, res) => res.json({ status: 'OK', time: new Date().toISOString() }));
 
 // HU-09: Cron para alertas (cada día a las 6pm)
-cron.schedule('0 18 * * *', () => {
-  const { getDB } = require('./prisma/db');
-  const db = getDB();
-  const alertas = db.prepare(`
-    SELECT m.nombre, 
-      ROUND(CAST(SUM(a.paquetes_entregados) AS FLOAT) / NULLIF(SUM(a.paquetes_asignados), 0) * 100, 1) as tasa
-    FROM asignaciones a
-    JOIN mensajeros m ON m.id = a.mensajero_id
-    JOIN jornadas j ON j.id = a.jornada_id
-    WHERE j.fecha = date('now')
-    GROUP BY a.mensajero_id
-    HAVING tasa < 70
-  `).all();
-  if (alertas.length > 0) {
-    console.log('⚠️  ALERTA RENDIMIENTO BAJO:', alertas);
-  }
+cron.schedule('0 18 * * *', async () => {
+  const { supabase } = require('./prisma/db');
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: jornadas } = await supabase.from('jornadas').select('id').eq('fecha', today);
+  const ids = (jornadas || []).map(j => j.id);
+  if (ids.length === 0) return;
+  const { data: asig } = await supabase
+    .from('asignaciones')
+    .select('mensajero_id, paquetes_entregados, paquetes_asignados, mensajeros (nombre)')
+    .in('jornada_id', ids);
+  const map = {};
+  (asig || []).forEach(a => {
+    if (!map[a.mensajero_id]) map[a.mensajero_id] = { nombre: a.mensajeros?.nombre, e: 0, a: 0 };
+    map[a.mensajero_id].e += a.paquetes_entregados || 0;
+    map[a.mensajero_id].a += a.paquetes_asignados || 0;
+  });
+  const alertas = Object.values(map).filter(m => m.a > 0 && (m.e / m.a * 100) < 70);
+  if (alertas.length > 0) console.log('⚠️  ALERTA RENDIMIENTO BAJO:', alertas.map(m => m.nombre));
 });
 
 app.listen(PORT, () => {
