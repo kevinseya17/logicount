@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-navy-900 text-white font-body;
+  }
+  h1, h2, h3 { @apply font-display; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent text-navy-900 font-display font-bold px-5 py-2.5 rounded-lg 
+           hover:bg-accent-light transition-all duration-200 active:scale-95 text-sm tracking-wide;
+  }
+  .btn-secondary {
+    @apply bg-navy-700 text-white font-body px-5 py-2.5 rounded-lg 
+           hover:bg-navy-600 transition-all duration-200 active:scale-95 text-sm border border-white/10;
+  }
+  .btn-danger {
+    @apply bg-red-600/20 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg 
+           hover:bg-red-600/40 transition-all duration-200 text-sm;
+  }
+  .card {
+    @apply bg-navy-800 border border-white/10 rounded-2xl p-6;
+  }
+  .input {
+    @apply w-full bg-navy-700 border border-white/10 rounded-xl px-4 py-2.5 text-white 
+           placeholder-white/30 focus:outline-none focus:border-accent/60 focus:ring-1 
+           focus:ring-accent/30 transition-all text-sm;
+  }
+  .label {
+    @apply block text-xs font-display font-semibold text-white/50 uppercase tracking-widest mb-1.5;
+  }
+  .badge-green {
+    @apply inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-400 text-xs px-2.5 py-1 rounded-full border border-emerald-500/20;
+  }
+  .badge-red {
+    @apply inline-flex items-center gap-1 bg-red-500/15 text-red-400 text-xs px-2.5 py-1 rounded-full border border-red-500/20;
+  }
+  .badge-yellow {
+    @apply inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-xs px-2.5 py-1 rounded-full border border-amber-500/20;
+  }
+  .badge-blue {
+    @apply inline-flex items-center gap-1 bg-blue-500/15 text-blue-400 text-xs px-2.5 py-1 rounded-full border border-blue-500/20;
+  }
+}
