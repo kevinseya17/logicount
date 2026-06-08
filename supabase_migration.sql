@@ -1,4 +1,4 @@
--- Ejecutar en: Supabase Dashboard → SQL Editor
+/* -- Ejecutar en: Supabase Dashboard → SQL Editor
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -57,3 +57,4 @@ ALTER TABLE mensajeros DISABLE ROW LEVEL SECURITY;
 ALTER TABLE jornadas DISABLE ROW LEVEL SECURITY;
 ALTER TABLE asignaciones DISABLE ROW LEVEL SECURITY;
 ALTER TABLE cierres DISABLE ROW LEVEL SECURITY;
+ */

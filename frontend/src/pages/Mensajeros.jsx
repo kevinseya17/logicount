@@ -73,17 +73,18 @@ export default function Mensajeros() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-4 md:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="font-display font-800 text-2xl text-white">Mensajeros</h1>
           <p className="text-white/40 text-sm mt-1">Gestión del equipo de reparto</p>
         </div>
-        <button onClick={openCreate} className="btn-primary">+ Nuevo mensajero</button>
+        <button onClick={openCreate} className="btn-primary w-full sm:w-auto">+ Nuevo mensajero</button>
       </div>
 
       <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/8">
               <th className="text-left px-6 py-4 text-white/40 font-display font-600 text-xs uppercase tracking-widest">Nombre</th>
@@ -126,6 +127,7 @@ export default function Mensajeros() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modal === 'form' && (

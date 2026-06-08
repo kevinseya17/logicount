@@ -45,7 +45,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       {/* Header */}
       <div>
         <h1 className="font-display font-800 text-2xl text-white">Dashboard operativo</h1>
@@ -65,7 +65,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Mensajeros activos" value={data?.totalMensajeros} color="blue" />
         <StatCard label="Entregados este mes" value={data?.resumenMes?.entregados ?? 0} color="emerald" />
         <StatCard label="Devueltos este mes" value={data?.resumenMes?.devueltos ?? 0} color="red" />

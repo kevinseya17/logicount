@@ -35,7 +35,7 @@ export default function Reportes() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="font-display font-800 text-2xl text-white">Reportes exportables</h1>
         <p className="text-white/40 text-sm mt-1">Genera y descarga reportes en Excel</p>
@@ -48,7 +48,7 @@ export default function Reportes() {
             <p className="text-white/40 text-xs">Incluye resumen de jornadas y detalle por mensajero</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Fecha desde</label>
               <input type="date" className="input" value={desde} onChange={e => setDesde(e.target.value)} />

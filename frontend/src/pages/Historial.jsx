@@ -19,8 +19,8 @@ export default function Historial() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8">
         <h1 className="font-display font-800 text-2xl text-white">Historial operativo</h1>
         <p className="text-white/40 text-sm mt-1">Registro de todas las jornadas</p>
       </div>
@@ -74,7 +74,7 @@ export default function Historial() {
                     {detail.estado}
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
                     { l: 'Recibidos', v: detail.paquetes_recibidos, c: 'text-blue-400' },
                     { l: 'Entregados', v: detail.total_entregados ?? '—', c: 'text-emerald-400' },
@@ -93,10 +93,11 @@ export default function Historial() {
               </div>
 
               {detail.asignaciones?.length > 0 && (
-                <div className="card p-0 overflow-hidden">
+                <div className="card p-0 overflow-hidden mt-4">
                   <p className="font-display font-700 text-white px-5 py-4 border-b border-white/8">Detalle por mensajero</p>
-                  <table className="w-full text-xs">
-                    <thead>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
                       <tr className="border-b border-white/5">
                         {['Mensajero', 'Asignados', 'Entregados', 'Devueltos', 'Pendientes'].map(h => (
                           <th key={h} className="text-left px-5 py-3 text-white/30 font-600">{h}</th>
@@ -113,8 +114,9 @@ export default function Historial() {
                           <td className="px-5 py-3 text-amber-400">{a.paquetes_pendientes}</td>
                         </tr>
                       ))}
-                    </tbody>
-                  </table>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

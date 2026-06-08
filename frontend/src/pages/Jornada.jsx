@@ -67,7 +67,7 @@ export default function Jornada() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" /></div>
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-6">
       <div>
         <h1 className="font-display font-800 text-2xl text-white">Jornada operativa</h1>
         <p className="text-white/40 text-sm mt-1">Apertura, asignación y cierre diario</p>
@@ -121,7 +121,7 @@ export default function Jornada() {
       {step === 'abrir' && (
         <div className="card">
           <p className="font-display font-700 text-white mb-4">Abrir nueva jornada</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="label">Fecha</label>
               <input type="date" className="input" value={formAbrir.fecha} onChange={e => setFormAbrir(f => ({ ...f, fecha: e.target.value }))} />
@@ -142,7 +142,7 @@ export default function Jornada() {
       {step === 'asignar' && jornada && (
         <div className="card">
           <p className="font-display font-700 text-white mb-4">Asignar paquetes</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="label">Mensajero</label>
               <select className="input" value={formAsignar.mensajero_id} onChange={e => setFormAsignar(f => ({ ...f, mensajero_id: e.target.value }))}>
@@ -173,7 +173,7 @@ export default function Jornada() {
               {jornada.asignaciones.map(a => (
                 <div key={a.id} className="bg-navy-700/50 rounded-xl p-4">
                   <p className="font-display font-600 text-white text-sm mb-3">{a.mensajero_nombre} <span className="text-white/40">— {a.paquetes_asignados} asignados</span></p>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {['entregados', 'devueltos', 'pendientes'].map(k => (
                       <div key={k}>
                         <label className="label">{k}</label>
